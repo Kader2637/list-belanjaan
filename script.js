@@ -1,166 +1,110 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-// Supabase config
-const supabaseUrl = 'https://feriqnmbfzixgeedmvzw.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlcmlxbm1iZnppeGdlZWRtdnp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2ODY3NTAsImV4cCI6MjA2NjI2Mjc1MH0.POc4TH7fATyb1lsWmMPmUZUww4vaH_5qgGCsD3MsW-E';
-const supabase = createClient(supabaseUrl, supabaseKey);
-const TABLE_NAME = "catatan_penjualan";
+const supabase = createClient(
+  'https://feriqnmbfzixgeedmvzw.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlcmlxbm1iZnppeGdlZWRtdnp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2ODY3NTAsImV4cCI6MjA2NjI2Mjc1MH0.POc4TH7fATyb1lsWmMPmUZUww4vaH_5qgGCsD3MsW-E'
+);
+const TABLE = 'catatan_penjualan';
 
-// DOM Elements
-const form = document.getElementById("form-barang");
-const namaBarangEl = document.getElementById("nama_barang");
-const typeBelanjaEl = document.getElementById("type_belanja");
-const stokEl = document.getElementById("stok");
-const hargaEl = document.getElementById("harga");
-const totalHargaEl = document.getElementById("total_harga");
-const hasilBelanjaEl = document.getElementById("hasil-belanja");
-const notifAreaEl = document.getElementById("notif-area");
+const form       = document.getElementById('form-barang');
+const namaBarang = document.getElementById('nama_barang');
+const typeBelanja= document.getElementById('type_belanja');
+const stokEl     = document.getElementById('stok');
+const hargaEl    = document.getElementById('harga');
+const totalEl    = document.getElementById('total_harga');
+const hasilEl    = document.getElementById('hasil-belanja');
+const notifEl    = document.getElementById('notif-area');
 
-// Format ke Rupiah
-const formatRupiah = (angka) => new Intl.NumberFormat('id-ID', {
-    style: 'currency', currency: 'IDR', minimumFractionDigits: 0
-}).format(angka);
+const rupiah = n => new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:0}).format(n);
 
-// Hitung total otomatis
-const hitungTotalOtomatis = () => {
-    const stok = parseInt(stokEl.value) || 0;
-    const harga = parseInt(hargaEl.value) || 0;
-    totalHargaEl.textContent = formatRupiah(stok * harga);
+const calcTotal = () => {
+  totalEl.textContent = rupiah((+stokEl.value || 0) * (+hargaEl.value || 0));
 };
-stokEl.addEventListener('input', hitungTotalOtomatis);
-hargaEl.addEventListener('input', hitungTotalOtomatis);
+stokEl.addEventListener('input', calcTotal);
+hargaEl.addEventListener('input', calcTotal);
 
-// Kelompokkan per bulan
-const kelompokkanPerBulan = (data) => {
-    return data.reduce((acc, item) => {
-        const tanggal = new Date(item.tanggal);
-        const key = tanggal.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
-        if (!acc[key]) acc[key] = [];
-        acc[key].push(item);
-        return acc;
-    }, {});
+// CRUD
+window.hapusItem = async id => {
+  if (confirm('Hapus item?')) {
+    await supabase.from(TABLE).delete().eq('id', id);
+    load();
+  }
 };
-
-// === FITUR HAPUS dan EDIT ===
-window.hapusItem = async (id) => {
-    if (confirm("Yakin ingin menghapus item ini?")) {
-        const { error } = await supabase.from(TABLE_NAME).delete().eq('id', id);
-        if (!error) loadData();
-    }
+window.editItem = async item => {
+  const nama = prompt('Nama Barang', item.nama_barang); if (nama === null) return;
+  const stok = parseInt(prompt('Stok', item.stok));
+  const harga = parseInt(prompt('Harga', item.harga));
+  const tipe = prompt('Tipe (bulanan/mingguan)', item.type_belanja);
+  if (!nama || isNaN(stok) || isNaN(harga)) return alert('Input tidak valid');
+  await supabase.from(TABLE).update({ nama_barang: nama, stok, harga, total: stok * harga, type_belanja: tipe }).eq('id', item.id);
+  load();
 };
 
-window.hapusBulan = async (bulan, items) => {
-    if (confirm(`Hapus semua data belanja di bulan ${bulan}?`)) {
-        const ids = items.map(i => i.id);
-        const { error } = await supabase.from(TABLE_NAME).delete().in('id', ids);
-        if (!error) loadData();
-    }
-};
+const groupByBulan = data => data.reduce((acc, i) => {
+  const d = new Date(i.tanggal);
+  const k = d.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+  (acc[k] = acc[k] || []).push(i);
+  return acc;
+}, {});
 
-window.editItem = async (item) => {
-    const nama = prompt("Nama Barang:", item.nama_barang);
-    if (nama === null) return;
-    const stok = parseInt(prompt("Stok:", item.stok));
-    const harga = parseInt(prompt("Harga Satuan:", item.harga));
-    const tipe = prompt("Tipe Belanja (bulanan/mingguan):", item.type_belanja);
-    if (!nama || isNaN(stok) || isNaN(harga) || !["bulanan", "mingguan"].includes(tipe)) {
-        alert("Input tidak valid!");
-        return;
-    }
-    const total = stok * harga;
-    const { error } = await supabase.from(TABLE_NAME)
-        .update({ nama_barang: nama, stok, harga, total, type_belanja: tipe })
-        .eq('id', item.id);
-    if (!error) loadData();
-};
-
-// === Tampilkan data ===
-const tampilkanData = (data) => {
-    const sekarang = new Date();
-    const bulanIniKey = sekarang.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
-
-    notifAreaEl.innerHTML = data.some(item => {
-        const tgl = new Date(item.tanggal);
-        return tgl.getMonth() === sekarang.getMonth() && tgl.getFullYear() === sekarang.getFullYear();
-    }) ? "" : `<div class="bg-yellow-200 text-yellow-800 p-4 rounded-lg shadow">💡 Anda belum belanja di bulan ${bulanIniKey}.</div>`;
-
-    if (data.length === 0) {
-        hasilBelanjaEl.innerHTML = `<p class='text-gray-500 text-center'>Belum ada data belanja.</p>`;
-        return;
-    }
-
-    const dataPerBulan = kelompokkanPerBulan(data);
-    hasilBelanjaEl.innerHTML = Object.entries(dataPerBulan).map(([bulan, items]) => {
-        const itemCards = items.map(item => `
-          <div class="border border-pink-100 p-4 rounded-xl bg-white/80 backdrop-blur-md flex flex-col md:flex-row justify-between items-start md:items-center gap-3 transition duration-300 hover:shadow-lg">
-            <div>
-              <p class="font-bold text-lg text-sky-700">${item.nama_barang}</p>
-              <p class="text-sm text-gray-500">${item.stok} x ${formatRupiah(item.harga)}</p>
-              <p class="text-sm"><span class="font-semibold">Tipe:</span> ${item.type_belanja}</p>
-            </div>
-            <div class="flex flex-col items-end space-y-1 text-right">
-              <span class="font-bold text-xl text-pink-500">${formatRupiah(item.total)}</span>
-              <button onclick="editItem(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="text-sm text-yellow-600 hover:underline">✏️ Edit</button>
-              <button onclick="hapusItem(${item.id})" class="text-sm text-red-500 hover:underline">🗑️ Hapus</button>
-            </div>
+const render = data => {
+  hasilEl.innerHTML = ''; notifEl.innerHTML = '';
+  if (!data.length) {
+    notifEl.innerHTML = '<div class="text-gray-500">Belum ada data belanja.</div>';
+    return;
+  }
+  const now = new Date();
+  const bulanKey = now.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+  if (!data.some(i => {
+    const d = new Date(i.tanggal);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  })) {
+    notifEl.innerHTML = `<div class="bg-yellow-100 text-yellow-800 p-4 rounded-lg shadow">💡 Anda belum belanja di bulan ${bulanKey}.</div>`;
+  }
+  const byBulan = groupByBulan(data);
+  hasilEl.innerHTML = Object.entries(byBulan).map(([bulan, items]) => {
+    const cards = items.map(it => `
+      <div class="bg-white/80 p-4 rounded-xl shadow transition hover:shadow-lg">
+        <h4 class="font-semibold text-sky-700">${it.nama_barang}</h4>
+        <p class="text-sm text-gray-500">${it.stok} × ${rupiah(it.harga)}</p>
+        <p class="text-sm mb-2"><span class="font-semibold">Tipe:</span> ${it.type_belanja}</p>
+        <div class="flex justify-between items-center">
+          <span class="text-pink-600 font-bold">${rupiah(it.total)}</span>
+          <div class="flex gap-2">
+            <button onclick='editItem(${JSON.stringify(it).replace(/"/g, '&quot;')})' class="text-yellow-500 hover:text-yellow-600">✏️</button>
+            <button onclick='hapusItem(${it.id})' class="text-red-500 hover:text-red-600">🗑️</button>
           </div>
-        `).join('');
-
-        return `
-          <div class="bg-white/60 backdrop-blur-md p-6 rounded-2xl shadow-lg">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-              <h3 class="text-xl font-bold text-sky-800">${bulan}</h3>
-              <div class="space-x-2">
-                <button onclick="toggleDetails('${bulan.replace(/\s+/g, '-')})" class="bg-sky-500 text-white px-3 py-1 rounded-lg hover:bg-sky-600 transition">Lihat Detail</button>
-                <button onclick='hapusBulan("${bulan}", ${JSON.stringify(items).replace(/"/g, '&quot;')})' class="bg-pink-500 text-white px-3 py-1 rounded-lg hover:bg-pink-600 transition">Hapus Bulan</button>
-              </div>
-            </div>
-            <div id="detail-${bulan.replace(/\s+/g, '-')}" class="mt-4 space-y-3 hidden">
-              ${itemCards}
-            </div>
-          </div>
-        `;
-      }).join("");
+        </div>
+      </div>
+    `).join('');
+    return `
+      <div class="bg-white border border-sky-100 rounded-2xl shadow-md p-5">
+        <h3 class="text-xl font-bold text-sky-600 mb-4">${bulan}</h3>
+        <div class="space-y-4">${cards}</div>
+      </div>
+    `;
+  }).join('');
 };
 
-window.toggleDetails = (bulanId) => {
-    const el = document.getElementById(`detail-${bulanId}`);
-    el.classList.toggle('hidden');
-};
+async function load() {
+  const { data } = await supabase.from(TABLE).select('*').order('tanggal', { ascending: false });
+  render(data || []);
+}
+load();
 
-// === Load Data ===
-const loadData = async () => {
-    const { data, error } = await supabase
-        .from(TABLE_NAME)
-        .select('*')
-        .order('tanggal', { ascending: false });
-
-    if (!error) tampilkanData(data);
-    else hasilBelanjaEl.innerHTML = "<p class='text-red-500'>Gagal memuat data.</p>";
-};
-
-// === Simpan Data Baru ===
-form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const stok = parseInt(stokEl.value);
-    const harga = parseInt(hargaEl.value);
-    const total = stok * harga;
-    const payload = {
-        nama_barang: namaBarangEl.value,
-        stok,
-        harga,
-        total,
-        type_belanja: typeBelanjaEl.value,
-        tanggal: new Date().toISOString().split('T')[0]
-    };
-
-    const { error } = await supabase.from(TABLE_NAME).insert(payload);
-    if (!error) {
-        form.reset();
-        totalHargaEl.textContent = formatRupiah(0);
-        await loadData();
-        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-    }
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  const stok = +stokEl.value, harga = +hargaEl.value;
+  const payload = {
+    nama_barang: namaBarang.value,
+    stok,
+    harga,
+    total: stok * harga,
+    type_belanja: typeBelanja.value,
+    tanggal: new Date().toISOString().split('T')[0]
+  };
+  await supabase.from(TABLE).insert(payload);
+  form.reset();
+  totalEl.textContent = 'Rp 0';
+  load();
 });
-
-loadData();
