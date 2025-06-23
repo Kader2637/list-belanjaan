@@ -39,27 +39,50 @@ window.editItem  = async item => {
   load();
 };
 
+// Accordion toggle eksklusif
 window.toggleAccordion = (id) => {
+  document.querySelectorAll('[id^="konten-"]').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('[id^="icon-"]').forEach(icon => icon.classList.remove('rotate-180'));
+
   const el = document.getElementById(`konten-${id}`);
   const icon = document.getElementById(`icon-${id}`);
-  el.classList.toggle('hidden');
-  icon.classList.toggle('rotate-180');
+
+  const isOpen = !el.classList.contains('hidden');
+  if (!isOpen) {
+    el.classList.remove('hidden');
+    icon.classList.add('rotate-180');
+  }
 };
 
-const groupByBulan = data=>data.reduce((acc,i)=>{const d=new Date(i.tanggal);const k=d.toLocaleString('id-ID',{month:'long',year:'numeric'});(acc[k]=acc[k]||[]).push(i);return acc;},{})
+const groupByBulan = data =>
+  data.reduce((acc,i)=>{
+    const d=new Date(i.tanggal);
+    const k=d.toLocaleString('id-ID',{month:'long',year:'numeric'});
+    (acc[k]=acc[k]||[]).push(i);
+    return acc;
+  },{});
 
 const render = data=>{
   hasilEl.innerHTML=''; notifEl.innerHTML='';
-  if(!data.length){ notifEl.innerHTML='<div class="text-gray-500">Belum ada data belanja.</div>'; return; }
+  if(!data.length){
+    notifEl.innerHTML='<div class="text-gray-500">Belum ada data belanja.</div>';
+    return;
+  }
 
-  const now = new Date(), bulanKey = now.toLocaleString('id-ID',{month:'long',year:'numeric'});
-  if(!data.some(i=>{const d=new Date(i.tanggal);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();})){
-    notifEl.innerHTML=`<div class="bg-yellow-100 text-yellow-800 p-4 rounded-lg shadow">💡 Anda belum belanja di bulan ${bulanKey}.</div>`;
+  const now = new Date();
+  const bulanKey = now.toLocaleString('id-ID',{month:'long',year:'numeric'});
+
+  if(!data.some(i=>{
+    const d=new Date(i.tanggal);
+    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+  })){
+    notifEl.innerHTML = `<div class="bg-yellow-100 text-yellow-800 p-4 rounded-lg shadow">💡 Anda belum belanja di bulan ${bulanKey}.</div>`;
   }
 
   const byBulan = groupByBulan(data);
-  hasilEl.innerHTML = Object.entries(byBulan).map(([bulan,items], idx)=>{
+  hasilEl.innerHTML = Object.entries(byBulan).map(([bulan,items])=>{
     const id = bulan.replace(/\s+/g,'-');
+    const totalBulan = items.reduce((acc,cur)=>acc+cur.total,0);
     const cards = items.map(it=>`
       <div class="bg-white/80 p-4 rounded-xl shadow transition hover:shadow-lg">
         <h4 class="font-semibold text-sky-700">${it.nama_barang}</h4>
@@ -72,19 +95,22 @@ const render = data=>{
             <button onclick='hapusItem(${it.id})' class="text-red-500 hover:text-red-600">🗑️</button>
           </div>
         </div>
-      </div>`).join('');
+      </div>
+    `).join('');
 
     return `
-    <div class="bg-white border border-sky-100 rounded-2xl shadow-md p-5">
-      <div class="flex justify-between items-center mb-3">
-        <h3 class="text-xl font-bold text-sky-600">${bulan}</h3>
-        <div class="flex items-center gap-2">
-          <button onclick="hapusBulan('${bulan}', ${JSON.stringify(items).replace(/"/g, '&quot;')})" class="text-red-500 hover:text-red-600 text-lg">🗑️</button>
-          <button onclick="toggleAccordion('${id}')" class="transition-transform" id="icon-${id}">▼</button>
+      <div class="bg-white border border-sky-100 rounded-2xl shadow-md p-5">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="text-xl font-bold text-sky-600">${bulan}</h3>
+          <div class="flex items-center gap-2">
+            <button onclick="hapusBulan('${bulan}', ${JSON.stringify(items).replace(/"/g, '&quot;')})" class="text-red-500 hover:text-red-600 text-lg">🗑️</button>
+            <button onclick="toggleAccordion('${id}')" class="transition-transform" id="icon-${id}">▼</button>
+          </div>
         </div>
+        <div class="text-right mb-3 text-sm text-pink-600 font-semibold">Total Bulan Ini: ${rupiah(totalBulan)}</div>
+        <div id="konten-${id}" class="space-y-4 hidden">${cards}</div>
       </div>
-      <div id="konten-${id}" class="space-y-4 hidden">${cards}</div>
-    </div>`;
+    `;
   }).join('');
 };
 
@@ -95,7 +121,17 @@ async function load(){
 load();
 
 form.addEventListener('submit',async e=>{
-  e.preventDefault(); const stok=+stokEl.value,harga=+hargaEl.value;
-  const payload={nama_barang:namaBarang.value,stok,harga,total:stok*harga,type_belanja:typeBelanja.value,tanggal:new Date().toISOString().split('T')[0]};
-  await supabase.from(TABLE).insert(payload); form.reset(); totalEl.textContent='Rp 0'; load();
+  e.preventDefault();
+  const stok=+stokEl.value,harga=+hargaEl.value;
+  const payload={
+    nama_barang:namaBarang.value,
+    stok,harga,
+    total:stok*harga,
+    type_belanja:typeBelanja.value,
+    tanggal:new Date().toISOString().split('T')[0]
+  };
+  await supabase.from(TABLE).insert(payload);
+  form.reset();
+  totalEl.textContent='Rp 0';
+  load();
 });
