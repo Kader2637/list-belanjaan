@@ -92,35 +92,39 @@ const tampilkanData = (data) => {
     const dataPerBulan = kelompokkanPerBulan(data);
     hasilBelanjaEl.innerHTML = Object.entries(dataPerBulan).map(([bulan, items]) => {
         const itemCards = items.map(item => `
-          <div class="border border-pink-100 p-4 rounded-xl bg-white/80 backdrop-blur-md flex flex-col md:flex-row justify-between items-start md:items-center gap-3 transition duration-300 hover:shadow-lg">
-            <div>
-              <p class="font-bold text-lg text-sky-700">${item.nama_barang}</p>
-              <p class="text-sm text-gray-500">${item.stok} x ${formatRupiah(item.harga)}</p>
-              <p class="text-sm"><span class="font-semibold">Tipe:</span> ${item.type_belanja}</p>
+            <div class="border p-4 rounded-md bg-white flex justify-between items-center">
+                <div>
+                    <p class="font-bold text-lg">${item.nama_barang}</p>
+                    <p class="text-sm text-gray-500">${item.stok} x ${formatRupiah(item.harga)}</p>
+                    <p class="text-sm"><span class="font-semibold">Tipe:</span> ${item.type_belanja}</p>
+                </div>
+                <div class="flex flex-col items-end space-y-1">
+                    <span class="font-bold text-xl text-blue-600">${formatRupiah(item.total)}</span>
+                    <button onclick="editItem(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="text-sm text-yellow-600 hover:underline">✏️ Edit</button>
+                    <button onclick="hapusItem(${item.id})" class="text-sm text-red-500 hover:underline">🗑️ Hapus</button>
+                </div>
             </div>
-            <div class="flex flex-col items-end space-y-1 text-right">
-              <span class="font-bold text-xl text-pink-500">${formatRupiah(item.total)}</span>
-              <button onclick="editItem(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="text-sm text-yellow-600 hover:underline">✏️ Edit</button>
-              <button onclick="hapusItem(${item.id})" class="text-sm text-red-500 hover:underline">🗑️ Hapus</button>
-            </div>
-          </div>
         `).join('');
 
         return `
-          <div class="bg-white/60 backdrop-blur-md p-6 rounded-2xl shadow-lg">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-              <h3 class="text-xl font-bold text-sky-800">${bulan}</h3>
-              <div class="space-x-2">
-                <button onclick="toggleDetails('${bulan.replace(/\s+/g, '-')})" class="bg-sky-500 text-white px-3 py-1 rounded-lg hover:bg-sky-600 transition">Lihat Detail</button>
-                <button onclick='hapusBulan("${bulan}", ${JSON.stringify(items).replace(/"/g, '&quot;')})' class="bg-pink-500 text-white px-3 py-1 rounded-lg hover:bg-pink-600 transition">Hapus Bulan</button>
-              </div>
+            <div class="bg-slate-50 p-4 rounded-xl shadow">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xl font-bold text-slate-700">${bulan}</h3>
+                    <div class="space-x-2">
+                        <button onclick="toggleDetails('${bulan.replace(/\s+/g, '-')}')" class="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600">
+                            Lihat Detail
+                        </button>
+                        <button onclick='hapusBulan("${bulan}", ${JSON.stringify(items).replace(/"/g, '&quot;')})' class="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600">
+                            Hapus Bulan
+                        </button>
+                    </div>
+                </div>
+                <div id="detail-${bulan.replace(/\s+/g, '-')}" class="mt-4 space-y-3 hidden">
+                    ${itemCards}
+                </div>
             </div>
-            <div id="detail-${bulan.replace(/\s+/g, '-')}" class="mt-4 space-y-3 hidden">
-              ${itemCards}
-            </div>
-          </div>
         `;
-      }).join("");
+    }).join('');
 };
 
 window.toggleDetails = (bulanId) => {
