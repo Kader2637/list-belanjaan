@@ -112,7 +112,7 @@ const render = (data) => {
       );
     })
   ) {
-    notifEl.innerHTML = `<div class="bg-yellow-100 text-yellow-800 p-4 rounded-lg shadow">💡 Anda belum belanja di bulan ${bulanKey}.</div>`;
+    notifEl.innerHTML = `<div class="bg-red-100 text-red-800 p-4 rounded-lg shadow">💡 Anda belum belanja di bulan ${bulanKey}.</div>`;
   }
 
   const byBulan = groupByBulan(data);
