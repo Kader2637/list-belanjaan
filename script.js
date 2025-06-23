@@ -82,50 +82,50 @@ const tampilkanData = (data) => {
     notifAreaEl.innerHTML = data.some(item => {
         const tgl = new Date(item.tanggal);
         return tgl.getMonth() === sekarang.getMonth() && tgl.getFullYear() === sekarang.getFullYear();
-    }) ? "" : `<div class="bg-yellow-200 text-yellow-800 p-4 rounded-lg shadow">💡 Anda belum belanja di bulan ${bulanIniKey}.</div>`;
+    }) ? "" : `<div style="background-color: #FFFBCC; color: #856404; padding: 10px; border-radius: 5px;">💡 Anda belum belanja di bulan ${bulanIniKey}.</div>`;
 
     if (data.length === 0) {
-        hasilBelanjaEl.innerHTML = `<p class='text-gray-500 text-center'>Belum ada data belanja.</p>`;
+        hasilBelanjaEl.innerHTML = `<p style='color: gray; text-align: center;'>Belum ada data belanja.</p>`;
         return;
     }
 
     const dataPerBulan = kelompokkanPerBulan(data);
     hasilBelanjaEl.innerHTML = Object.entries(dataPerBulan).map(([bulan, items]) => {
         const itemCards = items.map(item => `
-          <div class="border border-pink-100 p-4 rounded-xl bg-white/80 backdrop-blur-md flex flex-col md:flex-row justify-between items-start md:items-center gap-3 transition duration-300 hover:shadow-lg">
-            <div>
-              <p class="font-bold text-lg text-sky-700">${item.nama_barang}</p>
-              <p class="text-sm text-gray-500">${item.stok} x ${formatRupiah(item.harga)}</p>
-              <p class="text-sm"><span class="font-semibold">Tipe:</span> ${item.type_belanja}</p>
+            <div style="border: 1px solid #FFC0CB; padding: 16px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.8); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <p style="font-weight: bold; color: #007BFF;">${item.nama_barang}</p>
+                    <p style="color: #666;">${item.stok} x ${formatRupiah(item.harga)}</p>
+                    <p><span style="font-weight: bold;">Tipe:</span> ${item.type_belanja}</p>
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-weight: bold; color: #e63946;">${formatRupiah(item.total)}</span>
+                    <button onclick="editItem(${JSON.stringify(item).replace(/"/g, '&quot;')})" style="color: #FFC107; background: none; border: none; cursor: pointer;">✏️ Edit</button>
+                    <button onclick="hapusItem(${item.id})" style="color: #DC3545; background: none; border: none; cursor: pointer;">🗑️ Hapus</button>
+                </div>
             </div>
-            <div class="flex flex-col items-end space-y-1 text-right">
-              <span class="font-bold text-xl text-pink-500">${formatRupiah(item.total)}</span>
-              <button onclick="editItem(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="text-sm text-yellow-600 hover:underline">✏️ Edit</button>
-              <button onclick="hapusItem(${item.id})" class="text-sm text-red-500 hover:underline">🗑️ Hapus</button>
-            </div>
-          </div>
         `).join('');
 
         return `
-          <div class="bg-white/60 backdrop-blur-md p-6 rounded-2xl shadow-lg">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-              <h3 class="text-xl font-bold text-sky-800">${bulan}</h3>
-              <div class="space-x-2">
-                <button onclick="toggleDetails('${bulan.replace(/\s+/g, '-')})" class="bg-sky-500 text-white px-3 py-1 rounded-lg hover:bg-sky-600 transition">Lihat Detail</button>
-                <button onclick='hapusBulan("${bulan}", ${JSON.stringify(items).replace(/"/g, '&quot;')})' class="bg-pink-500 text-white px-3 py-1 rounded-lg hover:bg-pink-600 transition">Hapus Bulan</button>
-              </div>
+            <div style="background-color: rgba(255, 255, 255, 0.7); padding: 24px; border-radius: 16px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="font-size: 1.5em; color: #007BFF;">${bulan}</h3>
+                    <div>
+                        <button onclick="toggleDetails('${bulan.replace(/\s+/g, '-')})" style="padding: 8px 12px; border-radius: 4px; background-color: #007BFF; color: white; border: none; cursor: pointer;">Lihat Detail</button>
+                        <button onclick='hapusBulan("${bulan}", ${JSON.stringify(items).replace(/"/g, '&quot;')})' style="padding: 8px 12px; border-radius: 4px; background-color: #e63946; color: white; border: none; cursor: pointer;">Hapus Bulan</button>
+                    </div>
+                </div>
+                <div id="detail-${bulan.replace(/\s+/g, '-')}" style="margin-top: 16px; display: none;">
+                    ${itemCards}
+                </div>
             </div>
-            <div id="detail-${bulan.replace(/\s+/g, '-')}" class="mt-4 space-y-3 hidden">
-              ${itemCards}
-            </div>
-          </div>
         `;
-      }).join("");
+    }).join("");
 };
 
 window.toggleDetails = (bulanId) => {
     const el = document.getElementById(`detail-${bulanId}`);
-    el.classList.toggle('hidden');
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
 };
 
 // === Load Data ===
@@ -136,7 +136,7 @@ const loadData = async () => {
         .order('tanggal', { ascending: false });
 
     if (!error) tampilkanData(data);
-    else hasilBelanjaEl.innerHTML = "<p class='text-red-500'>Gagal memuat data.</p>";
+    else hasilBelanjaEl.innerHTML = "<p style='color: red;'>Gagal memuat data.</p>";
 };
 
 // === Simpan Data Baru ===
