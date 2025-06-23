@@ -159,9 +159,9 @@ const render = (data) => {
         <div class="max-h-[270px] overflow-y-auto space-y-3 pr-2">
           ${cards}
         </div>
-        <div class="text-right text-sm text-sky-700 font-semibold pt-2 border-t">${rupiah(
+        <div class="text-right text-sm text-sky-700 font-semibold pt-2 border-t">Total : ${rupiah(
           totalBulan
-        )} total</div>
+        )} </div>
       </div>`;
     })
     .join("");
