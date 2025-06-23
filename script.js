@@ -147,7 +147,15 @@ const render = (data) => {
 
       return `
       <div class="bg-white border border-sky-100 rounded-2xl shadow-md p-5 space-y-4">
-        <h3 class="text-xl font-bold text-sky-600">${bulan}</h3>
+<h3 class="text-xl font-bold text-sky-600 flex justify-between items-center">
+  <span>${bulan}</span>
+  <button onclick='hapusBulan("${bulan}", ${JSON.stringify(items).replace(
+        /"/g,
+        "&quot;"
+      )})' class="text-red-400 hover:text-red-600 text-sm">
+    🗑️
+  </button>
+</h3>
         <div class="max-h-[270px] overflow-y-auto space-y-3 pr-2">
           ${cards}
         </div>
