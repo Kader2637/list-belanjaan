@@ -20,6 +20,15 @@ const calcTotal=()=>{ totalEl.textContent = rupiah((+stokEl.value||0)*(+hargaEl.
 stokEl.addEventListener('input',calcTotal); hargaEl.addEventListener('input',calcTotal);
 
 window.hapusItem = async id => { if(confirm('Hapus item?')){ await supabase.from(TABLE).delete().eq('id',id); load(); } };
+
+window.hapusBulan = async (bulan, items) => {
+  if (confirm(`Hapus semua data bulan ${bulan}?`)) {
+    const ids = items.map(i => i.id);
+    await supabase.from(TABLE).delete().in('id', ids);
+    load();
+  }
+};
+
 window.editItem  = async item => {
   const nama  = prompt('Nama Barang',item.nama_barang); if(nama===null) return;
   const stok  = parseInt(prompt('Stok',item.stok));
@@ -30,16 +39,27 @@ window.editItem  = async item => {
   load();
 };
 
-const groupByBulan = data=>data.reduce((acc,i)=>{const d=new Date(i.tanggal);const k=d.toLocaleString('id-ID',{month:'long',year:'numeric'});(acc[k]=acc[k]||[]).push(i);return acc;},{});
+window.toggleAccordion = (id) => {
+  const el = document.getElementById(`konten-${id}`);
+  const icon = document.getElementById(`icon-${id}`);
+  el.classList.toggle('hidden');
+  icon.classList.toggle('rotate-180');
+};
+
+const groupByBulan = data=>data.reduce((acc,i)=>{const d=new Date(i.tanggal);const k=d.toLocaleString('id-ID',{month:'long',year:'numeric'});(acc[k]=acc[k]||[]).push(i);return acc;},{})
+
 const render = data=>{
   hasilEl.innerHTML=''; notifEl.innerHTML='';
   if(!data.length){ notifEl.innerHTML='<div class="text-gray-500">Belum ada data belanja.</div>'; return; }
+
   const now = new Date(), bulanKey = now.toLocaleString('id-ID',{month:'long',year:'numeric'});
   if(!data.some(i=>{const d=new Date(i.tanggal);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();})){
     notifEl.innerHTML=`<div class="bg-yellow-100 text-yellow-800 p-4 rounded-lg shadow">💡 Anda belum belanja di bulan ${bulanKey}.</div>`;
   }
+
   const byBulan = groupByBulan(data);
-  hasilEl.innerHTML = Object.entries(byBulan).map(([bulan,items])=>{
+  hasilEl.innerHTML = Object.entries(byBulan).map(([bulan,items], idx)=>{
+    const id = bulan.replace(/\s+/g,'-');
     const cards = items.map(it=>`
       <div class="bg-white/80 p-4 rounded-xl shadow transition hover:shadow-lg">
         <h4 class="font-semibold text-sky-700">${it.nama_barang}</h4>
@@ -53,7 +73,18 @@ const render = data=>{
           </div>
         </div>
       </div>`).join('');
-    return `<div class="bg-white border border-sky-100 rounded-2xl shadow-md p-5"><h3 class="text-xl font-bold text-sky-600 mb-4">${bulan}</h3><div class="space-y-4">${cards}</div></div>`;
+
+    return `
+    <div class="bg-white border border-sky-100 rounded-2xl shadow-md p-5">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-xl font-bold text-sky-600">${bulan}</h3>
+        <div class="flex items-center gap-2">
+          <button onclick="hapusBulan('${bulan}', ${JSON.stringify(items).replace(/"/g, '&quot;')})" class="text-red-500 hover:text-red-600 text-lg">🗑️</button>
+          <button onclick="toggleAccordion('${id}')" class="transition-transform" id="icon-${id}">▼</button>
+        </div>
+      </div>
+      <div id="konten-${id}" class="space-y-4 hidden">${cards}</div>
+    </div>`;
   }).join('');
 };
 
