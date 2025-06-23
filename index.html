@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Catatan Belanja</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,6 +18,7 @@
       display:grid;
       grid-template-columns:repeat(auto-fill,minmax(310px,1fr));
       gap:1.5rem;
+      align-items:start;
     }
   </style>
 </head>
@@ -67,9 +68,16 @@
     <div id="notif-area" class="text-center mb-8 slide-up"></div>
 
     <!-- KALENDER BULAN -->
-    <div id="hasil-belanja" class="grid-calendar slide-up"></div>
+    <div id="hasil-belanja" class="grid-calendar slide-up items-start"></div>
   </div>
 
-  <script type="module" src="script.js"></script>
+  <!-- MODAL DETIL BELANJA PER BULAN -->
+  <div id="modal-detail" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
+    <div class="bg-white p-6 rounded-2xl max-w-xl w-full relative animate-fade-in">
+      <button onclick="tutupModal()" class="absolute top-3 right-4 text-2xl font-bold text-red-500 hover:text-red-700">&times;</button>
+      <h3 id="modal-title" class="text-xl font-bold mb-4 text-sky-700">Detail Belanja Bulan Ini</h3>
+      <div id="modal-content" class="space-y-3 max-h-[60vh] overflow-y-auto"></div>
+    </div>
+  </div>
 </body>
 </html>
